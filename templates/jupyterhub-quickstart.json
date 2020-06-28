@@ -18,12 +18,12 @@
         },
         {
             "name": "JUPYTERHUB_IMAGE",
-            "value": "jupyterhub:3.4.0",
+            "value": "jupyterhub:3.4.0-jch",
             "required": true
         },
         {
             "name": "BUILDER_IMAGE",
-            "value": "s2i-minimal-notebook:3.6",
+            "value": "s2i-minimal-notebook-py36:2.5.1",
             "required": true
         },
         {

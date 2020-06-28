@@ -18,7 +18,7 @@
         },
         {
             "name": "BUILDER_IMAGE",
-            "value": "jupyterhub:3.4.0",
+            "value": "jupyterhub:3.4.0-jch",
             "required": true
         },
         {
@@ -28,7 +28,7 @@
         },
         {
             "name": "GIT_REFERENCE",
-            "value": "master",
+            "value": "9d35ed6485c2c71c717f14afdb682c4419bf13c8",
             "required": true
         },
         {
