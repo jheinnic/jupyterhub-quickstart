@@ -6,9 +6,9 @@
             "kind": "ImageStream",
             "apiVersion": "image.openshift.io/v1",
             "metadata": {
-                "name": "jupyterhub-py36",
+                "name": "jupyterhub",
                 "labels": {
-                    "build": "jupyterhub-py36"
+                    "build": "jupyterhub"
                 }
             },
             "spec": {
@@ -21,9 +21,9 @@
             "kind": "BuildConfig",
             "apiVersion": "build.openshift.io/v1",
             "metadata": {
-                "name": "jupyterhub-py36",
+                "name": "jupyterhub",
                 "labels": {
-                    "build": "jupyterhub-py36"
+                    "build": "jupyterhub"
                 }
             },
             "spec": {
@@ -55,123 +55,7 @@
                 "output": {
                     "to": {
                         "kind": "ImageStreamTag",
-                        "name": "jupyterhub-py36:3.4.0"
-                    }
-                }
-            }
-        },
-        {
-            "kind": "ImageStream",
-            "apiVersion": "image.openshift.io/v1",
-            "metadata": {
-                "name": "jupyterhub-py37",
-                "labels": {
-                    "build": "jupyterhub-py37"
-                }
-            },
-            "spec": {
-                "lookupPolicy": {
-                    "local": true
-                }
-            }
-        },
-        {
-            "kind": "BuildConfig",
-            "apiVersion": "build.openshift.io/v1",
-            "metadata": {
-                "name": "jupyterhub-py37",
-                "labels": {
-                    "build": "jupyterhub-py37"
-                }
-            },
-            "spec": {
-                "triggers": [
-                    {
-                        "type": "ConfigChange"
-                    },
-                    {
-                        "type": "ImageChange"
-                    }
-                ],
-                "source": {
-                    "type": "Git",
-                    "git": {
-                        "uri": "https://github.com/jheinnic/jupyterhub-quickstart.git",
-                        "ref": "0eb22979ee78c043a169cd1cf9a4b7fe126040c4"
-                    }
-                },
-                "strategy": {
-                    "type": "Source",
-                    "sourceStrategy": {
-                        "from": {
-                            "kind": "ImageStreamTag",
-                            "name": "python:3.7",
-                            "namespace": "openshift"
-                        }
-                    }
-                },
-                "output": {
-                    "to": {
-                        "kind": "ImageStreamTag",
-                        "name": "jupyterhub-py37:3.4.0"
-                    }
-                }
-            }
-        },
-        {
-            "kind": "ImageStream",
-            "apiVersion": "image.openshift.io/v1",
-            "metadata": {
-                "name": "jupyterhub-py38",
-                "labels": {
-                    "build": "jupyterhub-py38"
-                }
-            },
-            "spec": {
-                "lookupPolicy": {
-                    "local": true
-                }
-            }
-        },
-        {
-            "kind": "BuildConfig",
-            "apiVersion": "build.openshift.io/v1",
-            "metadata": {
-                "name": "jupyterhub-py38",
-                "labels": {
-                    "build": "jupyterhub-py38"
-                }
-            },
-            "spec": {
-                "triggers": [
-                    {
-                        "type": "ConfigChange"
-                    },
-                    {
-                        "type": "ImageChange"
-                    }
-                ],
-                "source": {
-                    "type": "Git",
-                    "git": {
-                        "uri": "https://github.com/jheinnic/jupyterhub-quickstart.git",
-                        "ref": "0eb22979ee78c043a169cd1cf9a4b7fe126040c4"
-                    }
-                },
-                "strategy": {
-                    "type": "Source",
-                    "sourceStrategy": {
-                        "from": {
-                            "kind": "ImageStreamTag",
-                            "name": "python:3.8",
-                            "namespace": "openshift"
-                        }
-                    }
-                },
-                "output": {
-                    "to": {
-                        "kind": "ImageStreamTag",
-                        "name": "jupyterhub-py38:3.4.0"
+                        "name": "jupyterhub:3.4.1-dev"
                     }
                 }
             }
