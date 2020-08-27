@@ -18,12 +18,12 @@
         },
         {
             "name": "JUPYTERHUB_IMAGE",
-            "value": "jupyterhub:3.4.0-jch",
+            "value": "jupyterhub:3.4.1-dev",
             "required": true
         },
         {
             "name": "NOTEBOOK_IMAGE",
-            "value": "s2i-minimal-notebook-py36:2.5.1",
+            "value": "s2i-minimal-notebook-py38:2.5.1-rc1",
             "required": true
         },
         {
@@ -39,13 +39,25 @@
         {
             "name": "DATABASE_PASSWORD",
             "generate": "expression",
-            "from": "[a-zA-Z0-9]{16}",
+	    "from": "[^-!@#$%&*_;:,.<>?\/`\\a-zA-Z0-9]{24}",
             "required": true
         },
         {
             "name": "COOKIE_SECRET",
             "generate": "expression",
-            "from": "[a-f0-9]{32}",
+            "from": "[a-f0-9]{64}",
+            "required": true
+        },
+        {
+            "name": "ENCRYPTION_KEY",
+            "generate": "expression",
+	    "from": "[-_a-zA-Z0-9]{43}-",
+            "required": true
+        },
+        {
+            "name": "JUPYTERHUB_CPU",
+            "description": "Amount of cpu available to JupyterHub.",
+            "value": "200m",
             "required": true
         },
         {
@@ -55,9 +67,21 @@
             "required": true
         },
         {
+            "name": "DATABASE_CPU",
+            "description": "Amount of cpu available to PostgreSQL.",
+            "value": "200m",
+            "required": true
+        },
+        {
             "name": "DATABASE_MEMORY",
             "description": "Amount of memory available to PostgreSQL.",
             "value": "512Mi",
+            "required": true
+        },
+        {
+            "name": "NOTEBOOK_CPU",
+            "description": "Amount of cpu available to each notebook.",
+            "value": "500m",
             "required": true
         },
         {
@@ -65,6 +89,18 @@
             "description": "Amount of memory available to each notebook.",
             "value": "512Mi",
             "required": true
+        },
+        {
+            "name": "NOTEBOOK_BURST_CPU",
+            "description": "Amount of burst cpu potentially available to each notebook.",
+            "value": "500m",
+            "required": false
+        },
+        {
+            "name": "NOTEBOOK_BURST_MEMORY",
+            "description": "Amount of burst memory potentially available to each notebook.",
+            "value": "512Mi",
+            "required": false
         }
     ],
     "objects": [
@@ -173,7 +209,12 @@
                                 "image": "${JUPYTERHUB_IMAGE}",
                                 "command": [ "wait-for-database" ],
                                 "resources": {
+                                    "requests": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
+                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                    },
                                     "limits": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
                                         "memory": "${JUPYTERHUB_MEMORY}"
                                     }
                                 },
@@ -204,7 +245,12 @@
                                     }
                                 ],
                                 "resources": {
+                                    "requests": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
+                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                    },
                                     "limits": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
                                         "memory": "${JUPYTERHUB_MEMORY}"
                                     }
                                 },
@@ -218,8 +264,20 @@
                                         "value": "${NOTEBOOK_IMAGE}"
                                     },
                                     {
+                                        "name": "JUPYTERHUB_NOTEBOOK_CPU",
+                                        "value": "${NOTEBOOK_CPU}"
+                                    },
+                                    {
                                         "name": "JUPYTERHUB_NOTEBOOK_MEMORY",
                                         "value": "${NOTEBOOK_MEMORY}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_NOTEBOOK_BURST_CPU",
+                                        "value": "${NOTEBOOK_BURST_CPU}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_NOTEBOOK_BURST_MEMORY",
+                                        "value": "${NOTEBOOK_BURST_MEMORY}"
                                     },
                                     {
                                         "name": "JUPYTERHUB_DATABASE_PASSWORD",
@@ -236,6 +294,10 @@
                                     {
                                         "name": "JUPYTERHUB_COOKIE_SECRET",
                                         "value": "${COOKIE_SECRET}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_ENCRYPTION_KEY",
+                                        "value": "${ENCRYPTION_KEY}"
                                     }
                                 ],
                                 "volumeMounts": [

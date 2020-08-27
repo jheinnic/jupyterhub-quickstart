@@ -5,23 +5,37 @@ c.JupyterHub.authenticator_class = "openshift"
 from oauthenticator.openshift import OpenShiftOAuthenticator
 OpenShiftOAuthenticator.scope = ['user:full']
 
-client_id = '%s-%s-users' % (application_name, namespace)
+client_id = os.environ['OAUTH_CLIENT_ID']
 client_secret = os.environ['OAUTH_CLIENT_SECRET']
 
 c.OpenShiftOAuthenticator.client_id = client_id
 c.OpenShiftOAuthenticator.client_secret = client_secret
 c.Authenticator.enable_auth_state = True
 
-c.CryptKeeper.keys = [ client_secret.encode('utf-8') ]
+c.CryptKeeper.keys = [ os.environ['JUPYTERHUB_ENCRYPTION_SECRET'] ]
 
-c.OpenShiftOAuthenticator.oauth_callback_url = (
-        'https://%s/hub/oauth_callback' % public_hostname)
+c.OpenShiftOAuthenticator.openshift_auth_api_url = \
+    os.environ['OPENSHIFT_AUTH_API_URL']
+c.OpenShiftOAuthenticator.openshift_rest_api_url = \
+    os.environ['OPENSHIFT_REST_API_URL']
+c.OpenShiftOAuthenticator.oauth_callback_url = \
+    f"https://{public_hostname}/hub/oauth_callback"
+
+# TODO: Kubernetes API Cert is self-signed, but we should be able to configure
+#       the trust relationship rather than disabling this.  There is no need to
+#       disable the OAuth cert validation--it is externally verifiable already,
+#       but this single flag controls cert validation for both APIs...
+c.OpenShiftOAuthenticator.validate_cert = False
 
 # Add any additional JupyterHub configuration settings.
 
 c.KubeSpawner.extra_labels = {
     'spawner': 'workspace',
     'class': 'session',
+    'user': '{username}'
+}
+c.KubeSpawner.storage_extra_labels = {
+    'spawner': 'workspace',
     'user': '{username}'
 }
 
@@ -43,15 +57,15 @@ if os.path.exists('/opt/app-root/configs/user_whitelist.txt'):
 # first time using an init container.
 
 volume_size = os.environ.get('JUPYTERHUB_VOLUME_SIZE')
+storage_class = os.environ.get('JUPYTERHUB_STORAGE_CLASS', 'gp2')
 
 if volume_size:
     c.KubeSpawner.pvc_name_template = c.KubeSpawner.pod_name_template
-
     c.KubeSpawner.storage_pvc_ensure = True
-
     c.KubeSpawner.storage_capacity = volume_size
+    c.KubeSpawner.storage_class = storage_class
 
-    c.KubeSpawner.storage_access_modes = ['ReadWriteOnce']
+    c.KubeSpawner.storage_access_modes.extend(['ReadWriteOnce'])
 
     c.KubeSpawner.volumes.extend([
         {
@@ -73,18 +87,20 @@ if volume_size:
     c.KubeSpawner.init_containers.extend([
         {
             'name': 'setup-volume',
-            'image': '%s' % c.KubeSpawner.image_spec,
+            'image': '%s' % c.KubeSpawner.image,
             'command': [
                 '/opt/app-root/bin/setup-volume.sh',
                 '/opt/app-root',
                 '/mnt/workspace'
             ],
-            "resources": {
-                "limits": {
-                    "memory": os.environ.get('NOTEBOOK_MEMORY', '128Mi')
+            'resources': {
+                'limits': {
+                    'cpu': '200m',
+                    'memory': '32Mi'
                 },
-                "requests": {
-                    "memory": os.environ.get('NOTEBOOK_MEMORY', '128Mi')
+                'requests': {
+                    'cpu': '80m',
+                    'memory': '32Mi'
                 }
             },
             'volumeMounts': [
@@ -102,6 +118,8 @@ from tornado import gen
 
 @gen.coroutine
 def modify_pod_hook(spawner, pod):
+    print(f"Called modify_pod_hook(spawner={spawner}, pod={pod})")
+
     pod.spec.automount_service_account_token = True
 
     # Grab the OpenShift user access token from the login state.
@@ -132,6 +150,7 @@ def modify_pod_hook(spawner, pod):
             pod.spec.containers[0].env.append(
                     dict(name='OPENSHIFT_PROJECT', value=name))
 
+    print(f"Creating {pod}")
     return pod
 
 c.KubeSpawner.modify_pod_hook = modify_pod_hook

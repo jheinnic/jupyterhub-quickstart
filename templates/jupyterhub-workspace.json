@@ -12,12 +12,7 @@
     },
     "parameters": [
         {
-            "name": "SPAWNER_NAMESPACE",
-            "value": "",
-            "required": true
-        },
-        {
-            "name": "CLUSTER_SUBDOMAIN",
+            "name": "OPENSHIFT_PROJECT",
             "value": "",
             "required": true
         },
@@ -28,12 +23,12 @@
         },
         {
             "name": "JUPYTERHUB_IMAGE",
-            "value": "jupyterhub:3.4.0-jch",
+            "value": "jupyterhub:3.4.1-dev",
             "required": true
         },
         {
             "name": "NOTEBOOK_IMAGE",
-            "value": "s2i-minimal-notebook-py36:2.5.1",
+            "value": "s2i-minimal-notebook-py38:2.5.1-rc1",
             "required": true
         },
         {
@@ -57,15 +52,37 @@
             "required": false
         },
         {
+            "name": "NOTEBOOK_INTERFACE",
+            "value": "classic"
+        },
+        {
             "name": "DATABASE_PASSWORD",
             "generate": "expression",
-            "from": "[a-zA-Z0-9]{16}",
+            "from": "[^-!@#$%&*_;:,.<>?\/`\\a-zA-Z0-9]{24}",
             "required": true
         },
         {
             "name": "COOKIE_SECRET",
             "generate": "expression",
-            "from": "[a-f0-9]{32}",
+            "from": "[a-f0-9]{64}",
+            "required": true
+        },
+        {
+            "name": "ENCRYPTION_KEY",
+            "description": "This secret must be 32 bytes of data encoded as 44 base64 characters, the last of which must be an '-' sign.  Use - for + and =, and _ for / to comply with the URL encodability requirement",
+            "generate": "expression",
+            "from": "[-_a-zA-Z0-9]{43}-",
+            "required": true
+        },
+        {
+            "name": "OAUTH_CLIENT_SECRET",
+            "generate": "expression",
+            "from": "[^-!@#$%&*_;:,.<>?\/`\\a-zA-Z0-9]{24}"
+        },
+        {
+            "name": "JUPYTERHUB_CPU",
+            "description": "Amount of cpu available to JupyterHub.",
+            "value": "200m",
             "required": true
         },
         {
@@ -75,9 +92,21 @@
             "required": true
         },
         {
+            "name": "DATABASE_CPU",
+            "description": "Amount of cpu available to PostgreSQL.",
+            "value": "200m",
+            "required": true
+        },
+        {
             "name": "DATABASE_MEMORY",
             "description": "Amount of memory available to PostgreSQL.",
             "value": "512Mi",
+            "required": true
+        },
+        {
+            "name": "NOTEBOOK_CPU",
+            "description": "Amount of cpu available to each notebook.",
+            "value": "500m",
             "required": true
         },
         {
@@ -87,12 +116,15 @@
             "required": true
         },
         {
-            "name": "NOTEBOOK_INTERFACE",
-            "value": "classic"
+            "name": "NOTEBOOK_BURST_CPU",
+            "description": "Amount of burst cpu potentially available to each notebook.",
+            "value": "500m",
+            "required": false
         },
         {
-            "name": "OPENSHIFT_PROJECT",
-            "value": "",
+            "name": "NOTEBOOK_BURST_MEMORY",
+            "description": "Amount of burst memory potentially available to each notebook.",
+            "value": "512Mi",
             "required": false
         },
         {
@@ -104,11 +136,6 @@
             "name": "IDLE_TIMEOUT",
             "description": "Time in seconds after which idle session is culled.",
             "value": ""
-        },
-        {
-            "name": "OAUTH_CLIENT_SECRET",
-            "generate": "expression",
-            "from": "[a-zA-Z0-9]{32}"
         }
     ],
     "objects": [
@@ -116,16 +143,18 @@
             "kind": "OAuthClient",
             "apiVersion": "oauth.openshift.io/v1",
             "metadata": {
-                "name": "${APPLICATION_NAME}-${SPAWNER_NAMESPACE}-users",
+                "name": "${APPLICATION_NAME}-${OPENSHIFT_PROJECT}-users",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
+                },
+                "annotations": {
+                    "serviceaccounts.openshift.io/oauth-redirectreference.first": "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"${APPLICATION_NAME}\"}}",
+                    "serviceaccounts.openshift.io/oauth-redirecturi.first": "hub/oauth_callback",
+                    "serviceaccounts.openshift.io/oauth-want-challenges": "false"
                 }
             },
             "secret": "${OAUTH_CLIENT_SECRET}",
-            "grantMethod": "auto",
-            "redirectURIs": [
-                "https://${APPLICATION_NAME}-${SPAWNER_NAMESPACE}.${CLUSTER_SUBDOMAIN}/hub/oauth_callback"
-            ]
+            "grantMethod": "auto"
         },
         {
             "kind": "ConfigMap",
@@ -234,7 +263,12 @@
                                 "image": "${JUPYTERHUB_IMAGE}",
                                 "command": [ "wait-for-database" ],
                                 "resources": {
+                                    "requests": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
+                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                    },
                                     "limits": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
                                         "memory": "${JUPYTERHUB_MEMORY}"
                                     }
                                 },
@@ -265,7 +299,12 @@
                                     }
                                 ],
                                 "resources": {
+                                    "requests": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
+                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                    },
                                     "limits": {
+                                        "cpu": "${JUPYTERHUB_CPU}",
                                         "memory": "${JUPYTERHUB_MEMORY}"
                                     }
                                 },
@@ -279,28 +318,32 @@
                                         "value": "${APPLICATION_NAME}"
                                     },
                                     {
+                                        "name": "JUPYTERHUB_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+				    },
+                                    {
                                         "name": "JUPYTERHUB_NOTEBOOK_IMAGE",
                                         "value": "${NOTEBOOK_IMAGE}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_NOTEBOOK_CPU",
+                                        "value": "${NOTEBOOK_CPU}"
                                     },
                                     {
                                         "name": "JUPYTERHUB_NOTEBOOK_MEMORY",
                                         "value": "${NOTEBOOK_MEMORY}"
                                     },
                                     {
-                                        "name": "JUPYTERHUB_NOTEBOOK_INTERFACE",
-                                        "value": "${NOTEBOOK_INTERFACE}"
+                                        "name": "JUPYTERHUB_NOTEBOOK_BURST_CPU",
+                                        "value": "${NOTEBOOK_BURST_CPU}"
                                     },
                                     {
-                                        "name": "OPENSHIFT_PROJECT",
-                                        "value": "${OPENSHIFT_PROJECT}"
-                                    },
-                                    {
-                                        "name": "JUPYTERHUB_VOLUME_SIZE",
-                                        "value": "${VOLUME_SIZE}"
-                                    },
-                                    {
-                                        "name": "JUPYTERHUB_IDLE_TIMEOUT",
-                                        "value": "${IDLE_TIMEOUT}"
+                                        "name": "JUPYTERHUB_NOTEBOOK_BURST_MEMORY",
+                                        "value": "${NOTEBOOK_BURST_MEMORY}"
                                     },
                                     {
                                         "name": "JUPYTERHUB_DATABASE_PASSWORD",
@@ -319,8 +362,24 @@
                                         "value": "${COOKIE_SECRET}"
                                     },
                                     {
+                                        "name": "JUPYTERHUB_ENCRYPTION_KEY",
+                                        "value": "${ENCRYPTION_KEY}"
+                                    },
+                                    {
                                         "name": "OAUTH_CLIENT_SECRET",
                                         "value": "${OAUTH_CLIENT_SECRET}"
+                                    },
+                                    {
+                                        "name": "OPENSHIFT_PROJECT",
+                                        "value": "${OPENSHIFT_PROJECT}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_VOLUME_SIZE",
+                                        "value": "${VOLUME_SIZE}"
+                                    },
+                                    {
+                                        "name": "JUPYTERHUB_IDLE_TIMEOUT",
+                                        "value": "${IDLE_TIMEOUT}"
                                     }
                                 ],
                                 "volumeMounts": [
@@ -474,7 +533,12 @@
                                     }
                                 ],
                                 "resources": {
+                                    "requests": {
+                                        "cpu": "${DATABASE_CPU}",
+                                        "memory": "${DATABASE_MEMORY}"
+                                    },
                                     "limits": {
+                                        "cpu": "${DATABASE_CPU}",
                                         "memory": "${DATABASE_MEMORY}"
                                     }
                                 },

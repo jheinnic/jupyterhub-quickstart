@@ -10,6 +10,19 @@ from openshift.dynamic import DynamicClient
 
 # Helper function for doing unit conversions or translations if needed.
 
+def convert_size_to_cpus(size):
+    multipliers = {
+        'm': 1/1000.0
+    }
+    size = str(size)
+    for suffix in multipliers:
+        if size.lower().endswith(suffix):
+            return float(size[0:-len(suffix)]) * multipliers[suffix]
+    try:
+        return float(size)
+    except ValueError as e:
+        raise ValueError(f'"{size}" is not a valid memory specification.  Must be a float or a string with suffix m', e)
+
 def convert_size_to_bytes(size):
     multipliers = {
         'k': 1000,
@@ -33,8 +46,8 @@ def convert_size_to_bytes(size):
 
     try:
         return int(size)
-    except ValueError:
-        raise RuntimeError('"%s" is not a valid memory specification. Must be an integer or a string with suffix K, M, G, T, Ki, Mi, Gi or Ti.' % size)
+    except ValueError as e:
+        raise ValueError(f'"{size}" is not a valid memory specification. Must be an integer or a string with suffix K, M, G, T, Ki, Mi, Gi or Ti.', e)
 
 # Initialise client for the REST API used doing configuration.
 #
@@ -42,6 +55,9 @@ def convert_size_to_bytes(size):
 # which disables verification of the certificate. If don't use this the
 # Python openshift/kubernetes clients will fail. We also disable any
 # warnings from urllib3 to get rid of the noise in the logs this creates.
+#
+# Also see `c.OpenShiftOAuthenticator.validate_cert = False` in the
+# workspace mode config script.
 
 load_incluster_config()
 
@@ -156,15 +172,19 @@ c.JupyterHub.hub_connect_ip = application_name
 
 c.ConfigurableHTTPProxy.api_url = 'http://127.0.0.1:8082'
 
-c.Spawner.start_timeout = 120
-c.Spawner.http_timeout = 60
+c.KubeSpawner.start_timeout = 120
+c.Spawner.http_timeout = 100
 
 c.KubeSpawner.port = 8080
 
 c.KubeSpawner.common_labels = { 'app': application_name }
+c.KubeSparner.extra_labels = { 'user': '{username}' }
+c.KubeSparner.storage_extra_labels = { 'user': '{username}' }
 
-c.KubeSpawner.uid = os.getuid()
-c.KubeSpawner.fs_gid = os.getuid()
+c.KubeSpawner.uid = None
+c.KubeSpawner.gid = 0
+c.KubeSpawner.fs_gid = 0
+c.KubeSpawner.supplemental_gids = [0, 1000, 1001, 1002]
 
 c.KubeSpawner.extra_annotations = {
     "alpha.image.policy.openshift.io/resolve-names": "*"
@@ -194,12 +214,17 @@ c.JupyterHub.authenticator_class = 'tmpauthenticator.TmpAuthenticator'
 
 c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 
-c.KubeSpawner.image_spec = resolve_image_name(
+c.KubeSpawner.image = resolve_image_name(
         os.environ.get('JUPYTERHUB_NOTEBOOK_IMAGE',
-        's2i-minimal-notebook:3.6'))
+        's2i-minimal-notebook-py36:2.5.1-rc1'))
+c.KubeSpwner.image_pull_policy = 'Always';
 
-if os.environ.get('JUPYTERHUB_NOTEBOOK_MEMORY'):
-    c.Spawner.mem_limit = convert_size_to_bytes(os.environ['JUPYTERHUB_NOTEBOOK_MEMORY'])
+c.KubeSpawner.service_account=os.environ.get('SERVICE_ACCOUNT_NAME', f'{application_name}-hub')
+
+c.Spawner.cpu_guarantee = convert_size_to_cpus(os.environ.get('NOTEBOOK_CPU', '125m'))
+c.Spawner.mem_guarantee = convert_size_to_bytes(os.environ.get('NOTEBOOK_MEMORY', '512Mi'))
+c.Spawner.cpu_limit     = convert_size_to_cpus(os.environ.get('NOTEBOOK_BURST_CPU', c.Spawner.cpu_guarantee))
+c.Spawner.mem_limit     = convert_size_to_bytes(os.environ.get('NOTEBOOK_BURST_MEMORY', c.Spawner.mem_guarantee))
 
 notebook_interface = os.environ.get('JUPYTERHUB_NOTEBOOK_INTERFACE')
 
@@ -221,10 +246,7 @@ if notebook_interface:
 
 @wrapt.patch_function_wrapper('jupyterhub.proxy', 'ConfigurableHTTPProxy.add_route')
 def _wrapper_add_route(wrapped, instance, args, kwargs):
-    def _extract_args(routespec, target, data, *_args, **_kwargs):
-        return (routespec, target, data, _args, _kwargs)
-
-    routespec, target, data, _args, _kwargs = _extract_args(*args, **kwargs)
+    (routespec, target, data), _args = args[0:3], args[3:]
 
     old = 'http://%s:%s' % (c.JupyterHub.hub_connect_ip, c.JupyterHub.hub_port)
     new = 'http://127.0.0.1:%s' % c.JupyterHub.hub_port
@@ -232,7 +254,7 @@ def _wrapper_add_route(wrapped, instance, args, kwargs):
     if target.startswith(old):
         target = target.replace(old, new)
 
-    return wrapped(routespec, target, data, *_args, **_kwargs)
+    return wrapped(routespec, target, data, *_args, **kwargs)
 
 @wrapt.patch_function_wrapper('jupyterhub.spawner', 'LocalProcessSpawner.get_env')
 def _wrapper_get_env(wrapped, instance, args, kwargs):
