@@ -1,5 +1,8 @@
 # Authenticate users against OpenShift OAuth provider.
 
+if os.environ['JUPYTERHUB_PROJECT'] != os.environ['JUPYTERHUB_NAMESPACE']:
+    raise ValueError(f"JUPYTERHUB_PROJECT template variable does not match actual launch namespace!  {os.environ['JUPYTERHUB_PROJECT']} != {os.environ['JUPYTERHUB_NAMESPACE']}")
+
 c.JupyterHub.authenticator_class = "openshift"
 
 from oauthenticator.openshift import OpenShiftOAuthenticator
@@ -137,7 +140,7 @@ def modify_pod_hook(spawner, pod):
     # result is different then we use it, not if it is the same
     # which would suggest it isn't unique.
 
-    project = os.environ.get('OPENSHIFT_PROJECT')
+    project = os.environ.get('NOTEBOOK_PROJECT')
 
     if project:
         name = project.format(username=spawner.user.name)
@@ -148,7 +151,7 @@ def modify_pod_hook(spawner, pod):
             # Ensure project is created if it doesn't exist.
 
             pod.spec.containers[0].env.append(
-                    dict(name='OPENSHIFT_PROJECT', value=name))
+                    dict(name='NOTEBOOK_PROJECT', value=name))
 
     print(f"Creating {pod}")
     return pod

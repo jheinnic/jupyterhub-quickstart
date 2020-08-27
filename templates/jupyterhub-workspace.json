@@ -12,7 +12,8 @@
     },
     "parameters": [
         {
-            "name": "OPENSHIFT_PROJECT",
+            "name": "JUPYTERHUB_PROJECT",
+	    "description": "Set this to be the project where Jupyterhub will run from",
             "value": "",
             "required": true
         },
@@ -30,6 +31,12 @@
             "name": "NOTEBOOK_IMAGE",
             "value": "s2i-minimal-notebook-py38:2.5.1-rc1",
             "required": true
+        },
+        {
+            "name": "NOTEBOOK_PROJECT",
+	    "description": "Template for project where Jupyterhub will launch notebooks into.  Supports {username} substitution.  Uses JUPYTERHUB_PROJECT if blank",
+            "value": "",
+            "required": false
         },
         {
             "name": "JUPYTERHUB_CONFIG",
@@ -143,7 +150,7 @@
             "kind": "OAuthClient",
             "apiVersion": "oauth.openshift.io/v1",
             "metadata": {
-                "name": "${APPLICATION_NAME}-${OPENSHIFT_PROJECT}-users",
+                "name": "${APPLICATION_NAME}-${JUPYTERHUB_PROJECT}-users",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
                 },
@@ -161,6 +168,7 @@
             "apiVersion": "v1",
             "metadata": {
                 "name": "${APPLICATION_NAME}-cfg",
+		"namespace": "${JUPYTERHUB_PROJECT}",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
                 }
@@ -177,6 +185,7 @@
             "apiVersion": "v1",
             "metadata": {
                 "name": "${APPLICATION_NAME}-hub",
+		"namespace": "${JUPYTERHUB_PROJECT}",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
                 },
@@ -192,6 +201,7 @@
             "apiVersion": "authorization.openshift.io/v1",
             "metadata": {
                 "name": "${APPLICATION_NAME}-edit",
+		"namespace": "${JUPYTERHUB_PROJECT}",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
                 }
@@ -213,6 +223,7 @@
             "apiVersion": "apps.openshift.io/v1",
             "metadata": {
                 "name": "${APPLICATION_NAME}",
+		"namespace": "${JUPYTERHUB_PROJECT}",
                 "labels": {
                     "app": "${APPLICATION_NAME}"
                 }
@@ -264,12 +275,12 @@
                                 "command": [ "wait-for-database" ],
                                 "resources": {
                                     "requests": {
-                                        "cpu": "${JUPYTERHUB_CPU}",
-                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                        "cpu": "50m",
+                                        "memory": "24Mi"
                                     },
                                     "limits": {
-                                        "cpu": "${JUPYTERHUB_CPU}",
-                                        "memory": "${JUPYTERHUB_MEMORY}"
+                                        "cpu": "100m",
+                                        "memory": "64Mi"
                                     }
                                 },
                                 "env": [
@@ -365,14 +376,26 @@
                                         "name": "JUPYTERHUB_ENCRYPTION_KEY",
                                         "value": "${ENCRYPTION_KEY}"
                                     },
+				    {
+                                        "name": "OAUTH_CLIENT_ID",
+					"value": "${APPLICATION_NAME}-${JUPYTERHUB_PROJECT}-users"
+				    },
                                     {
                                         "name": "OAUTH_CLIENT_SECRET",
                                         "value": "${OAUTH_CLIENT_SECRET}"
                                     },
+				    {
+                                        "name": "JUPYTERHUB_PROJECT",
+					"value": "${JUPYTERHUB_PROJECT}"
+				    },
                                     {
-                                        "name": "OPENSHIFT_PROJECT",
-                                        "value": "${OPENSHIFT_PROJECT}"
+                                        "name": "NOTEBOOK_PROJECT",
+                                        "value": "${NOTEBOOK_PROJECT}"
                                     },
+				    {
+					"name": "SERVICE_ACCOUNT_NAME",
+					"value": "${APPLICATION_NAME}-hub"
+				    },
                                     {
                                         "name": "JUPYTERHUB_VOLUME_SIZE",
                                         "value": "${VOLUME_SIZE}"

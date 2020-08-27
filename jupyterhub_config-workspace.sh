@@ -7,4 +7,5 @@ export OPENSHIFT_AUTH_API_URL=$OAUTH_ISSUER_ADDRESS
 
 # export OAUTH_CLIENT_ID="system:serviceaccount:${JUPYTERHUB_NAMESPACE}:${APPLICATION_NAME}-hub"
 # export OAUTH_CLIENT_SECRET=`cat /var/run/secrets/kubernetes.io/serviceaccount/token`
-export OAUTH_CLIENT_ID="${APPLICATION_NAME}-${JUPYTERHUB_NAMESPACE}-users"
+
+export NOTEBOOK_PROJECT="${NOTEBOOK_PROJECT:-${JUPYTERHUB_PROJECT}}"
