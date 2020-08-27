@@ -197,8 +197,8 @@ c.KubeSpawner.pod_name_template = '%s-nb-{username}' % application_name
 c.JupyterHub.admin_access = True
 
 if os.environ.get('JUPYTERHUB_COOKIE_SECRET'):
-    c.JupyterHub.cookie_secret = bytearray.fromhex(
-       os.environ['JUPYTERHUB_COOKIE_SECRET'])
+    c.JupyterHub.cookie_secret = bytes(bytearray.fromhex(
+       os.environ['JUPYTERHUB_COOKIE_SECRET']))
 else:
     c.JupyterHub.cookie_secret_file = '/opt/app-root/data/cookie_secret'
 
