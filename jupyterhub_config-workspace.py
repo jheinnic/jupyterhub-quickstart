@@ -15,7 +15,7 @@ c.OpenShiftOAuthenticator.client_id = client_id
 c.OpenShiftOAuthenticator.client_secret = client_secret
 c.Authenticator.enable_auth_state = True
 
-c.CryptKeeper.keys = [ os.environ['JUPYTERHUB_ENCRYPTION_SECRET'] ]
+c.CryptKeeper.keys = [ os.environ['JUPYTERHUB_ENCRYPTION_KEY'] ]
 
 c.OpenShiftOAuthenticator.openshift_auth_api_url = \
     os.environ['OPENSHIFT_AUTH_API_URL']
