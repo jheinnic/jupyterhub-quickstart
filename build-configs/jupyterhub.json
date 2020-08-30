@@ -39,7 +39,7 @@
                     "type": "Git",
                     "git": {
                         "uri": "https://github.com/jheinnic/jupyterhub-quickstart.git",
-                        "ref": "0eb22979ee78c043a169cd1cf9a4b7fe126040c4"
+                        "ref": "b99dd34bdb965cf055ad395fc5717fbb36c6ea1"
                     }
                 },
                 "strategy": {
