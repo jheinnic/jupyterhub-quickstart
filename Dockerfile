@@ -1,4 +1,4 @@
-FROM registry.redhat.io/rhscl/python-36-rhel7@sha256:d8881affb7666e9f1e5b718b27db89c41ab3b8ebeb12510772bf221ee74895db
+FROM registry.redhat.io/rhscl/python-36-rhel7:1-76.1596049344
 
 LABEL io.k8s.display-name="JupyterHub" \
       io.k8s.description="JupyterHub." \
@@ -29,7 +29,8 @@ COPY requirements.txt /opt/app-root/src
 # Create additional directories.
 #
 # Fixup permissions on directories and files.
-RUN pip install -U pip setuptools wheel && \
+RUN source /opt/app-root/etc/scl_enable && \
+    pip install -U pip setuptools wheel && \
     pip install -r /opt/app-root/src/requirements.txt && \
     echo " -----> Installing npm packages." && \
     npm install -g configurable-http-proxy && \
