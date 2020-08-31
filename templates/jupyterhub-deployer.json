@@ -18,12 +18,12 @@
         },
         {
             "name": "JUPYTERHUB_IMAGE",
-            "value": "jupyterhub:3.4.1-dev",
+            "value": "jupyterhub:4.0.0",
             "required": true
         },
         {
             "name": "NOTEBOOK_IMAGE",
-            "value": "s2i-minimal-notebook-py38:2.5.1-rc1",
+            "value": "s2i-minimal-notebook-py36:2.5.1-rc1",
             "required": true
         },
         {
@@ -39,20 +39,17 @@
         {
             "name": "DATABASE_PASSWORD",
             "generate": "expression",
-	    "from": "[^-!@#$%&*_;:,.<>?\/`\\a-zA-Z0-9]{24}",
-            "required": true
+	    "from": "[#:,a-zA-Z0-9]{24}"
         },
         {
             "name": "COOKIE_SECRET",
             "generate": "expression",
-            "from": "[a-f0-9]{64}",
-            "required": true
+            "from": "[a-f0-9]{64}"
         },
         {
             "name": "ENCRYPTION_KEY",
             "generate": "expression",
-	    "from": "[-_a-zA-Z0-9]{43}-",
-            "required": true
+            "from": "[a-f0-9]{64}"
         },
         {
             "name": "JUPYTERHUB_CPU",
