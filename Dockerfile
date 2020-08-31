@@ -14,6 +14,7 @@ COPY jupyterhub_config-workspace.py /opt/app-root/etc/
 COPY jupyterhub_config-workspace.sh /opt/app-root/etc/
 COPY scripts/* /opt/app-root/bin/
 COPY start-jupyterhub.sh /opt/app-root/bin
+COPY requirements.txt /opt/app-root/src
 
 # Ensure we are using the latest pip and wheel packages.
 # Install python and npm packages needed for running JupyterHub.
@@ -29,7 +30,7 @@ COPY start-jupyterhub.sh /opt/app-root/bin
 #
 # Fixup permissions on directories and files.
 RUN pip install -U pip setuptools wheel && \
-    pip install -r /tmp/src/requirements.txt && \
+    pip install -r /opt/app-root/src/requirements.txt && \
     echo " -----> Installing npm packages." && \
     npm install -g configurable-http-proxy && \
     mkdir -p /opt/app-root/scripts && \
@@ -39,7 +40,8 @@ RUN pip install -U pip setuptools wheel && \
     mkdir -p /opt/app-root/data && \
     chown -R 1001 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
     chgrp -R 0 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
-    chmod -R g+w /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder
+    chmod -R g+w /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
+    rm /opt/app-root/src/requirements.txt
 
 USER 1001
 
