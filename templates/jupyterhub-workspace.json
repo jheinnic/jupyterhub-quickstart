@@ -65,7 +65,7 @@
         {
             "name": "DATABASE_PASSWORD",
             "generate": "expression",
-            "from": "[,:#a-zA-Z0-9]{24}"
+            "from": "[a-zA-Z0-9]{32}"
         },
         {
             "name": "COOKIE_SECRET",
@@ -81,7 +81,7 @@
         {
             "name": "OAUTH_CLIENT_SECRET",
             "generate": "expression",
-            "from": "[,:#a-zA-Z0-9]{24}"
+            "from": "[a-zA-Z0-9]{32}"
         },
         {
             "name": "JUPYTERHUB_CPU",
