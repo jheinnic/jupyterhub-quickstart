@@ -15,6 +15,7 @@ c.OpenShiftOAuthenticator.client_id = client_id
 c.OpenShiftOAuthenticator.client_secret = client_secret
 c.Authenticator.enable_auth_state = True
 
+from base64 import b64encode
 hex_key = os.environ['JUPYTERHUB_ENCRYPTION_KEY']
 c.CryptKeeper.keys = b64encode(bytes.fromhex(hex_key)).decode()
 
