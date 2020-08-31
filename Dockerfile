@@ -39,10 +39,14 @@ RUN source /opt/app-root/etc/scl_enable && \
     echo "source /opt/app-root/etc/generate_container_user" >> /opt/app-root/etc/scl_enable && \
     echo " -----> Creating additional directories." && \
     mkdir -p /opt/app-root/data && \
-    chown -R 1001 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
-    chgrp -R 0 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
-    chmod -R g+w /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
-    rm /opt/app-root/src/requirements.txt
+    # chown -R 1001 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder /opt/app-root/src/requirements.txt && \
+    # chgrp -R 0 /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
+    # chmod -R g+w /opt/app-root/bin /opt/app-root/etc /opt/app-root/builder && \
+    rm /opt/app-root/src/requirements.txt && \
+    chown -R 1001 /opt/app-root/[bdersR]* && \
+    chgrp -R 0 /opt/app-root/[bdersR]* && \
+    chmod -R g+w /opt/app-root/[bdersR]* && \
+    fix-permissions /opt/app-root 
 
 USER 1001
 
