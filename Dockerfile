@@ -53,4 +53,10 @@ USER 1001
 ENV NPM_CONFIG_PREFIX=/opt/app-root \
     PYTHONPATH=/opt/app-root/src
 
-# No need to specify CMD or ENTRYPOINT as we wish to inherit those choices from S2I.
+# Declaring this CMD is not necessary, but does allow the S2i builder to be run
+# without having been used to build a source directory with default overrides,
+# in which case it simply runs JupyterHub as though the Assembly step had been
+# run against an empty source repository.  Without this, we would have to
+# actually perform a no-op assembly run against and empty source repository and
+# use the resulting image to access that same behavior.
+CMD [ "/opt/app-root/builder/run" ]
