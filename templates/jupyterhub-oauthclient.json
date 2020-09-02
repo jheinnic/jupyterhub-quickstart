@@ -1,0 +1,47 @@
+{
+    "kind": "Template",
+    "apiVersion": "template.openshift.io/v1",
+    "metadata": {
+        "name": "jupyterhub-oauthclient",
+        "annotations": {
+            "openshift.io/display-name": "JupyterHub OAuth Client",
+            "description": "Template for attempting to deploy OAuth Client support for a JupyterHub Workspace",
+            "iconClass": "icon-python",
+            "tags": "python,jupyter,jupyterhub"
+        }
+    },
+    "parameters": [
+        {
+            "name": "JUPYTERHUB_PROJECT",
+	    "description": "Set this to be the project where Jupyterhub will run from",
+            "value": "",
+            "required": true
+        },
+        {
+            "name": "APPLICATION_NAME",
+            "value": "lab",
+            "required": true
+        },
+        {
+            "name": "OAUTH_CLIENT_SECRET",
+            "generate": "expression",
+            "from": "[a-zA-Z0-9]{32}"
+        }
+    ],
+    "objects": [
+        {
+            "kind": "OAuthClient",
+            "apiVersion": "oauth.openshift.io/v1",
+            "metadata": {
+                "name": "${APPLICATION_NAME}-${JUPYTERHUB_PROJECT}-users",
+                "labels": {
+                    "app": "${APPLICATION_NAME}"
+                }
+            },
+            "grantMethod": "auto",
+            "redirectURIs":
+              - https://${APPLICATION_NAME}-${JUPYTERHUB_PROJECT}.apps.lab.luminostics.pictures/hub/oauth_callback
+            "secret": "${OAUTH_CLIENT_SECRET}"
+        }
+    ]
+}
