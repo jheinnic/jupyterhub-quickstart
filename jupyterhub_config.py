@@ -172,8 +172,8 @@ c.JupyterHub.hub_connect_ip = application_name
 
 c.ConfigurableHTTPProxy.api_url = 'http://127.0.0.1:8082'
 
-c.KubeSpawner.start_timeout = 120
-c.Spawner.http_timeout = 100
+c.KubeSpawner.start_timeout = 200
+c.Spawner.http_timeout = 160
 
 c.KubeSpawner.port = 8080
 
@@ -217,7 +217,7 @@ c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 c.KubeSpawner.image = resolve_image_name(
         os.environ.get('JUPYTERHUB_NOTEBOOK_IMAGE',
         's2i-minimal-notebook-py36:2.5.1-rc1'))
-c.KubeSpwner.image_pull_policy = 'Always';
+c.KubeSpawner.image_pull_policy = 'IfNotPresent';
 
 c.KubeSpawner.service_account=os.environ.get('SERVICE_ACCOUNT_NAME', f'{application_name}-hub')
 
